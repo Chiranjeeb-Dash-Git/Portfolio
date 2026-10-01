@@ -101,46 +101,49 @@ export function InteractivePortfolio() {
 
     if (penCanvas && penNib && penWrap) {
       var NAME_TEXT = 'Chiranjeeb Dash';
-      var FONT_SIZE = 68;
-      var FONT_FAMILY = "'Dancing Script', cursive";
+      var FONT_SIZE = 84;
+      var FONT_FAMILY = "'Dancing Script', 'Brush Script MT', 'Great Vibes', cursive";
       var LETTER_DELAY_MS = 110; // ms between each letter appearing
-      var HOLD_MS = 900;         // ms to hold completed name
+      var HOLD_MS = 1200;        // ms to hold completed name
       var FADE_MS = 600;         // ms to fade out
       var PAUSE_MS = 400;        // ms gap before restart
 
-      // Gradient colors
+      // Vibrant poppy colors
       var GRAD_STOPS = [
         { pos: 0,    color: '#ffffff' },
         { pos: 0.25, color: '#ffd700' },
-        { pos: 0.65, color: '#ff4500' },
+        { pos: 0.60, color: '#ff4500' },
         { pos: 1,    color: '#ff007f' },
       ];
 
       function resizePenCanvas() {
         if (!penCanvas || !penWrap) return;
-        var w = penWrap.offsetWidth || 640;
-        var h = Math.round(FONT_SIZE * 1.6);
-        penCanvas.width = w;
-        penCanvas.height = h;
-        penCanvas.style.width = w + 'px';
-        penCanvas.style.height = h + 'px';
+        var dpr = window.devicePixelRatio || 1;
+        var cssW = penWrap.offsetWidth || 700;
+        var cssH = Math.round(FONT_SIZE * 1.6);
+
+        penCanvas.width = Math.round(cssW * dpr);
+        penCanvas.height = Math.round(cssH * dpr);
+        penCanvas.style.width = cssW + 'px';
+        penCanvas.style.height = cssH + 'px';
       }
 
-      function getGradient(ctx2d: CanvasRenderingContext2D, textWidth: number, textHeight: number) {
-        var g = ctx2d.createLinearGradient(0, 0, Math.max(textWidth, 350), 0);
+      function getGradient(ctx2d: CanvasRenderingContext2D, textWidth: number) {
+        var g = ctx2d.createLinearGradient(0, 0, Math.max(textWidth, 500), 0);
         GRAD_STOPS.forEach(function(s) { g.addColorStop(s.pos, s.color); });
         return g;
       }
 
       function getLetterXPositions(ctx2d: CanvasRenderingContext2D): number[] {
-        ctx2d.font = 'bold ' + FONT_SIZE + 'px ' + FONT_FAMILY;
+        var dpr = window.devicePixelRatio || 1;
+        ctx2d.font = 'bold ' + Math.round(FONT_SIZE * dpr) + 'px ' + FONT_FAMILY;
         var positions: number[] = [];
-        var x = 12;
+        var x = 12 * dpr;
         for (var i = 0; i < NAME_TEXT.length; i++) {
-          positions.push(x);
+          positions.push(x / dpr);
           x += ctx2d.measureText(NAME_TEXT[i]).width;
         }
-        positions.push(x); // end position
+        positions.push(x / dpr);
         return positions;
       }
 
@@ -156,26 +159,29 @@ export function InteractivePortfolio() {
 
         function drawLetters(count: number, alpha: number) {
           if (!penCanvas || !penCtx) return;
+          var dpr = window.devicePixelRatio || 1;
           var W = penCanvas.width;
           var H = penCanvas.height;
+
           penCtx.clearRect(0, 0, W, H);
           if (count === 0) return;
 
+          penCtx.save();
           penCtx.globalAlpha = alpha;
 
           // Vibrant multi-glow
-          penCtx.shadowColor = 'rgba(255, 94, 0, 0.85)';
-          penCtx.shadowBlur = 18;
+          penCtx.shadowColor = '#ff4500';
+          penCtx.shadowBlur = 24 * dpr;
 
-          penCtx.font = 'bold ' + FONT_SIZE + 'px ' + FONT_FAMILY;
-          penCtx.fillStyle = getGradient(penCtx, W, H);
+          var fontSizeScaled = Math.round(FONT_SIZE * dpr);
+          penCtx.font = 'bold ' + fontSizeScaled + 'px ' + FONT_FAMILY;
+          penCtx.fillStyle = getGradient(penCtx, W);
           penCtx.textBaseline = 'alphabetic';
 
           var sub = NAME_TEXT.substring(0, count);
-          penCtx.fillText(sub, 12, Math.round(H * 0.78));
+          penCtx.fillText(sub, Math.round(12 * dpr), Math.round(H * 0.72));
 
-          penCtx.shadowBlur = 0;
-          penCtx.globalAlpha = 1;
+          penCtx.restore();
         }
 
         function movePenNib(letterIdx: number, alpha: number) {
@@ -184,20 +190,20 @@ export function InteractivePortfolio() {
           var canvRect = penCanvas.getBoundingClientRect();
           if (!letterXPositions.length) return;
           var xInCanvas = letterXPositions[Math.min(letterIdx, letterXPositions.length - 1)];
-          var scaleX = penCanvas.offsetWidth / penCanvas.width;
-          var left = (canvRect.left - wrapRect.left) + xInCanvas * scaleX - 10;
-          var top = (canvRect.top - wrapRect.top) + penCanvas.offsetHeight * 0.1;
+          var left = (canvRect.left - wrapRect.left) + xInCanvas - 8;
+          var top = (canvRect.top - wrapRect.top) + penCanvas.offsetHeight * 0.05;
           penNib.style.left = left + 'px';
           penNib.style.top = top + 'px';
           penNib.style.opacity = String(alpha);
           var rot = -20 + (letterIdx / NAME_TEXT.length) * 8;
-          penNib.style.transform = 'rotate(' + rot + 'deg) scale(' + (0.9 + alpha * 0.1) + ')';
+          penNib.style.transform = 'rotate(' + rot + 'deg) scale(' + (1.1 + alpha * 0.1) + ')';
         }
 
         function startWritingLoop() {
           if (loopStarted || !penCtx || !penCanvas) return;
           loopStarted = true;
 
+          resizePenCanvas();
           letterXPositions = getLetterXPositions(penCtx);
           currentLetterCount = 0;
           canvasAlpha = 1;
@@ -245,8 +251,14 @@ export function InteractivePortfolio() {
           writeNextLetter();
         }
 
-        // Start animation immediately and re-measure once fonts arrive
+        // Start animation immediately
         startWritingLoop();
+
+        var onResize = function() {
+          resizePenCanvas();
+          if (penCtx) letterXPositions = getLetterXPositions(penCtx);
+        };
+        window.addEventListener('resize', onResize);
 
         if ((document as any).fonts && (document as any).fonts.ready) {
           (document as any).fonts.ready.then(function() {
