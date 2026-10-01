@@ -1677,7 +1677,7 @@ export function InteractivePortfolio() {
         <div className="welcome-text">
           <div className="welcome-avatar-wrap">
             <img
-              src="https://avatars.githubusercontent.com/u/190807578?v=4"
+              src="https://avatars.githubusercontent.com/u/180313099?v=4"
               alt="Chiranjeeb Dash"
               className="welcome-avatar"
             />
