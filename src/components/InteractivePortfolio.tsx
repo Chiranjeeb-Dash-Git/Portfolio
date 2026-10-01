@@ -126,8 +126,8 @@ export function InteractivePortfolio() {
         penCanvas.style.height = h + 'px';
       }
 
-      function getGradient(ctx2d: CanvasRenderingContext2D, w: number, h: number) {
-        var g = ctx2d.createLinearGradient(0, 0, w, h);
+      function getGradient(ctx2d: CanvasRenderingContext2D, textWidth: number, textHeight: number) {
+        var g = ctx2d.createLinearGradient(0, 0, Math.max(textWidth, 350), 0);
         GRAD_STOPS.forEach(function(s) { g.addColorStop(s.pos, s.color); });
         return g;
       }
@@ -152,17 +152,20 @@ export function InteractivePortfolio() {
         var canvasAlpha = 1;
         var phase: 'writing' | 'holding' | 'fading' | 'pausing' = 'writing';
         var letterXPositions: number[] = [];
+        var loopStarted = false;
 
         function drawLetters(count: number, alpha: number) {
           if (!penCanvas || !penCtx) return;
           var W = penCanvas.width;
           var H = penCanvas.height;
           penCtx.clearRect(0, 0, W, H);
+          if (count === 0) return;
+
           penCtx.globalAlpha = alpha;
 
-          // Shadow / glow
-          penCtx.shadowColor = 'rgba(255, 140, 0, 0.55)';
-          penCtx.shadowBlur = 14;
+          // Vibrant multi-glow
+          penCtx.shadowColor = 'rgba(255, 94, 0, 0.85)';
+          penCtx.shadowBlur = 18;
 
           penCtx.font = 'bold ' + FONT_SIZE + 'px ' + FONT_FAMILY;
           penCtx.fillStyle = getGradient(penCtx, W, H);
@@ -187,17 +190,15 @@ export function InteractivePortfolio() {
           penNib.style.left = left + 'px';
           penNib.style.top = top + 'px';
           penNib.style.opacity = String(alpha);
-          // Slight rotation based on writing direction
           var rot = -20 + (letterIdx / NAME_TEXT.length) * 8;
           penNib.style.transform = 'rotate(' + rot + 'deg) scale(' + (0.9 + alpha * 0.1) + ')';
         }
 
         function startWritingLoop() {
-          if (!penCtx || !penCanvas) return;
+          if (loopStarted || !penCtx || !penCanvas) return;
+          loopStarted = true;
 
-          // Precompute letter positions
           letterXPositions = getLetterXPositions(penCtx);
-
           currentLetterCount = 0;
           canvasAlpha = 1;
           phase = 'writing';
@@ -211,7 +212,6 @@ export function InteractivePortfolio() {
               var tid = setTimeout(writeNextLetter, LETTER_DELAY_MS);
               penTimeoutIds.push(tid);
             } else {
-              // Finished writing — hide nib
               if (penNib) penNib.style.opacity = '0';
               phase = 'holding';
               var htid = setTimeout(startFade, HOLD_MS);
@@ -234,6 +234,7 @@ export function InteractivePortfolio() {
                 if (!penCanvas || !penCtx) return;
                 penCtx.clearRect(0, 0, penCanvas.width, penCanvas.height);
                 phase = 'pausing';
+                loopStarted = false;
                 var ptid = setTimeout(startWritingLoop, PAUSE_MS);
                 penTimeoutIds.push(ptid);
               }
@@ -241,20 +242,18 @@ export function InteractivePortfolio() {
             penRafId = requestAnimationFrame(fadeStep);
           }
 
-          // Small initial delay so font is loaded
-          var initTid = setTimeout(writeNextLetter, 50);
-          penTimeoutIds.push(initTid);
+          writeNextLetter();
         }
 
-        // Wait for Dancing Script font to load before starting
+        // Start animation immediately and re-measure once fonts arrive
+        startWritingLoop();
+
         if ((document as any).fonts && (document as any).fonts.ready) {
           (document as any).fonts.ready.then(function() {
-            letterXPositions = getLetterXPositions(penCtx!);
-            startWritingLoop();
+            if (penCtx) {
+              letterXPositions = getLetterXPositions(penCtx);
+            }
           });
-        } else {
-          var fontTid = setTimeout(startWritingLoop, 800);
-          penTimeoutIds.push(fontTid);
         }
       }
     }
