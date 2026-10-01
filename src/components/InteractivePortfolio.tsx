@@ -1675,6 +1675,13 @@ export function InteractivePortfolio() {
           {particles}
         </div>
         <div className="welcome-text">
+          <div className="welcome-avatar-wrap">
+            <img
+              src="https://avatars.githubusercontent.com/u/190807578?v=4"
+              alt="Chiranjeeb Dash"
+              className="welcome-avatar"
+            />
+          </div>
           <h1>Welcome To My Portfolio</h1>
           <div className="welcome-line" />
           <div className="welcome-sub">Loading experience…</div>
