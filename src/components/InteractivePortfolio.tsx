@@ -1154,6 +1154,37 @@ export function InteractivePortfolio() {
       if ($('#f-body')) $('#f-body').value = S.fonts.body;
     }
 
+    function syncToNeon() {
+      return fetch('/api/portfolio', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(S),
+      }).then(function (response) {
+        if (!response.ok) throw new Error('Neon persistence failed');
+      });
+    }
+
+    async function hydrateFromNeon() {
+      try {
+        var response = await fetch('/api/portfolio', { cache: 'no-store' });
+        if (!response.ok) return;
+        var payload = await response.json();
+        if (!payload.state) {
+          await syncToNeon();
+          return;
+        }
+        for (var key in payload.state) S[key] = payload.state[key];
+        if (!S.theme.glow) S.theme.glow = 1;
+        if (!S.theme.speed) S.theme.speed = 1;
+        localStorage.setItem(LS, JSON.stringify(S));
+        applyTheme(clone(S.theme));
+        applyFonts();
+        renderAll();
+      } catch (error) {
+        console.warn('Using local portfolio cache; Neon is unavailable', error);
+      }
+    }
+
     (function () {
       var p = $('#presets');
       if (p) {
@@ -1459,10 +1490,14 @@ export function InteractivePortfolio() {
       });
       try {
         localStorage.setItem(LS, JSON.stringify(S));
-        flash('Saved ✓');
       } catch (err) {
-        flash('Storage blocked');
+        // Large certificate PDFs can exceed browser storage quota; Neon remains
+        // the durable source of truth even when the local cache cannot update.
       }
+      flash('Syncing to Neon…');
+      void syncToNeon()
+        .then(function () { flash('Saved to Neon ✓'); })
+        .catch(function () { flash('Saved locally'); });
       if (closeDrawer && $('#drawer')) $('#drawer').classList.remove('open');
     }
 
@@ -1527,6 +1562,7 @@ export function InteractivePortfolio() {
     applyFonts();
     renderAll();
     updateUndoBtn();
+    void hydrateFromNeon();
 
     /* ---------- 3. Three.js 3D Scene ---------- */
     var threeCleanup: (() => void) | null = null;
