@@ -662,7 +662,8 @@ export function InteractivePortfolio() {
         var credential = e.credentialId
           ? '<span class="credential-meta"><span class="credential-label">Credential ID</span>' + ed('credentialId', e.credentialId, 'credential-id') + '</span>'
           : '';
-        c.appendChild(card('cert-badge', 'certs', i, e, thumb + '<span class="cert-copy">' + ed('name', e.name) + credential + '</span>', !!e.img));
+        var verify = e.url ? '<span class="credential-verify" data-verify-url="' + esc(e.url) + '">Verify credential ↗</span>' : '';
+        c.appendChild(card('cert-badge', 'certs', i, e, thumb + '<span class="cert-copy">' + ed('name', e.name) + credential + verify + '</span>', !!e.img));
       });
       c.appendChild(addCard('certs', '+ Add certificate', 'add-card cert-add'));
     }
@@ -807,6 +808,14 @@ export function InteractivePortfolio() {
           renderSkills();
           applyEditable();
         }
+        return;
+      }
+      var verifyLink: HTMLElement | null = t.closest('[data-verify-url]');
+      if (verifyLink && !document.body.classList.contains('editing')) {
+        e.preventDefault();
+        e.stopPropagation();
+        var verifyUrl = verifyLink.dataset.verifyUrl;
+        if (verifyUrl) window.open(verifyUrl, '_blank', 'noopener,noreferrer');
         return;
       }
       var iv: HTMLImageElement | null = t.closest('.cert-badge img.thumb');
@@ -969,7 +978,7 @@ export function InteractivePortfolio() {
       $('#lm-photo-wrap').style.display = isCert ? 'block' : 'none';
       $('#lm-title').textContent = isCert ? 'Certificate credential' : 'Card link';
       $('#lm-desc').textContent = isCert
-        ? 'Add the credential ID and verification URL. If you enter only an ID, a LinkedIn-style verification URL is generated automatically.'
+        ? 'Add the credential ID and verification URL. Attach a certificate photo to open the certificate directly in this portfolio.'
         : 'Paste a website URL, an email address or a phone number. Clicking the card opens it.';
       $('#lm-preview').innerHTML = it.img ? '<img src="' + it.img + '" style="max-width:100%;max-height:120px;border-radius:8px;">' : '';
       $('#lm-file').value = '';
@@ -995,7 +1004,6 @@ export function InteractivePortfolio() {
         }
         if (v) {
           it.url = normUrl(v);
-          it.img = '';
         } else if (!it.img) {
           it.url = '';
         }
@@ -1034,7 +1042,6 @@ export function InteractivePortfolio() {
       r.onload = function () {
         var it = getList(LM.list!)[LM.i];
         it.img = r.result as string;
-        it.url = '';
         $('#lm-preview').innerHTML = '<img src="' + r.result + '" style="max-width:100%;max-height:120px;border-radius:8px;">';
       };
       r.readAsDataURL(f);
@@ -2000,7 +2007,7 @@ export function InteractivePortfolio() {
           <div id="lm-photo-wrap" style={{ display: 'none' }}>
             <div className="orsep">or</div>
             <label className="filebtn">
-              📷 Attach a certificate photo
+              📷 Attach certificate photo for direct viewing
               <input type="file" id="lm-file" accept="image/*" style={{ display: 'none' }} />
             </label>
             <div id="lm-preview" style={{ marginTop: '8px', textAlign: 'center' }}></div>
