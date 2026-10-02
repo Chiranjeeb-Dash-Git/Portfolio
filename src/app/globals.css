@@ -112,17 +112,22 @@ section {
 .name-pen-container {
   position: relative;
   width: 100%;
-  max-width: 680px;
-  margin-bottom: 0.4rem;
+  max-width: 100%;
+  margin-bottom: 0;
   display: block;
-  min-height: 110px;
+  /* height is set by JS — no min-height to avoid the gap */
+  animation: name-float 5s ease-in-out infinite;
+}
+
+@keyframes name-float {
+  0%,  100% { transform: translateY(0px);   filter: drop-shadow(0 0 18px rgba(var(--accent-rgb),.45)); }
+  50%        { transform: translateY(-5px);  filter: drop-shadow(0 0 32px rgba(var(--accent-rgb),.75)); }
 }
 
 .name-canvas {
   display: block;
   width: 100%;
   height: auto;
-  min-height: 110px;
 }
 
 .pen-nib {

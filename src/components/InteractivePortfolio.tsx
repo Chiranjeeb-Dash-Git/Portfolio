@@ -1,5 +1,3 @@
-'use client';
-
 import { useEffect } from 'react';
 import * as THREE from 'three';
 
@@ -101,12 +99,17 @@ export function InteractivePortfolio() {
 
     if (penCanvas && penNib && penWrap) {
       var NAME_TEXT = 'Chiranjeeb Dash';
-      var FONT_SIZE = 84;
       var FONT_FAMILY = "'Dancing Script', 'Brush Script MT', 'Great Vibes', cursive";
-      var LETTER_DELAY_MS = 110; // ms between each letter appearing
-      var HOLD_MS = 1200;        // ms to hold completed name
-      var FADE_MS = 600;         // ms to fade out
-      var PAUSE_MS = 400;        // ms gap before restart
+      var LETTER_DELAY_MS = 100; // ms between each letter
+      var HOLD_MS = 2800;        // ms to hold completed name
+      var FADE_MS = 700;         // ms to fade out
+      var PAUSE_MS = 350;        // ms gap before restart
+
+      // Responsive font size: ~14% of panel width, clamped 80-160px
+      function getFontSize() {
+        var w = penWrap ? (penWrap.offsetWidth || 680) : 680;
+        return Math.min(160, Math.max(80, Math.round(w * 0.14)));
+      }
 
       // Vibrant poppy colors
       var GRAD_STOPS = [
@@ -119,12 +122,13 @@ export function InteractivePortfolio() {
       function resizePenCanvas() {
         if (!penCanvas || !penWrap) return;
         var dpr = window.devicePixelRatio || 1;
-        var cssW = penWrap.offsetWidth || 700;
-        var cssH = Math.round(FONT_SIZE * 1.6);
+        var fs = getFontSize();
+        var cssW = penWrap.offsetWidth || 680;
+        var cssH = Math.round(fs * 1.25); // tight — just enough for descenders
 
-        penCanvas.width = Math.round(cssW * dpr);
+        penCanvas.width  = Math.round(cssW * dpr);
         penCanvas.height = Math.round(cssH * dpr);
-        penCanvas.style.width = cssW + 'px';
+        penCanvas.style.width  = cssW + 'px';
         penCanvas.style.height = cssH + 'px';
       }
 
@@ -136,9 +140,10 @@ export function InteractivePortfolio() {
 
       function getLetterXPositions(ctx2d: CanvasRenderingContext2D): number[] {
         var dpr = window.devicePixelRatio || 1;
-        ctx2d.font = 'bold ' + Math.round(FONT_SIZE * dpr) + 'px ' + FONT_FAMILY;
+        var fs = getFontSize();
+        ctx2d.font = 'bold ' + Math.round(fs * dpr) + 'px ' + FONT_FAMILY;
         var positions: number[] = [];
-        var x = 12 * dpr;
+        var x = 10 * dpr;
         for (var i = 0; i < NAME_TEXT.length; i++) {
           positions.push(x / dpr);
           x += ctx2d.measureText(NAME_TEXT[i]).width;
@@ -157,11 +162,12 @@ export function InteractivePortfolio() {
         var letterXPositions: number[] = [];
         var loopStarted = false;
 
-        function drawLetters(count: number, alpha: number) {
+        function drawLetters(count: number, alpha: number, glowBoost?: number) {
           if (!penCanvas || !penCtx) return;
           var dpr = window.devicePixelRatio || 1;
           var W = penCanvas.width;
           var H = penCanvas.height;
+          var fs = getFontSize();
 
           penCtx.clearRect(0, 0, W, H);
           if (count === 0) return;
@@ -169,17 +175,18 @@ export function InteractivePortfolio() {
           penCtx.save();
           penCtx.globalAlpha = alpha;
 
-          // Vibrant multi-glow
+          // Glow — boosted during hold pulse
+          var blur = (24 + (glowBoost || 0) * 18) * dpr;
           penCtx.shadowColor = '#ff4500';
-          penCtx.shadowBlur = 24 * dpr;
+          penCtx.shadowBlur = blur;
 
-          var fontSizeScaled = Math.round(FONT_SIZE * dpr);
+          var fontSizeScaled = Math.round(fs * dpr);
           penCtx.font = 'bold ' + fontSizeScaled + 'px ' + FONT_FAMILY;
           penCtx.fillStyle = getGradient(penCtx, W);
           penCtx.textBaseline = 'alphabetic';
 
           var sub = NAME_TEXT.substring(0, count);
-          penCtx.fillText(sub, Math.round(12 * dpr), Math.round(H * 0.72));
+          penCtx.fillText(sub, Math.round(10 * dpr), Math.round(H * 0.80));
 
           penCtx.restore();
         }
@@ -191,10 +198,10 @@ export function InteractivePortfolio() {
           if (!letterXPositions.length) return;
           var xInCanvas = letterXPositions[Math.min(letterIdx, letterXPositions.length - 1)];
           var left = (canvRect.left - wrapRect.left) + xInCanvas - 8;
-          var top = (canvRect.top - wrapRect.top) + penCanvas.offsetHeight * 0.05;
-          penNib.style.left = left + 'px';
-          penNib.style.top = top + 'px';
-          penNib.style.opacity = String(alpha);
+          var top  = (canvRect.top  - wrapRect.top)  + penCanvas.offsetHeight * 0.05;
+          penNib.style.left      = left + 'px';
+          penNib.style.top       = top  + 'px';
+          penNib.style.opacity   = String(alpha);
           var rot = -20 + (letterIdx / NAME_TEXT.length) * 8;
           penNib.style.transform = 'rotate(' + rot + 'deg) scale(' + (1.1 + alpha * 0.1) + ')';
         }
@@ -220,7 +227,22 @@ export function InteractivePortfolio() {
             } else {
               if (penNib) penNib.style.opacity = '0';
               phase = 'holding';
-              var htid = setTimeout(startFade, HOLD_MS);
+
+              // Gentle breathing glow during hold
+              var holdStart = performance.now();
+              function holdPulse(now: number) {
+                if (phase !== 'holding') return;
+                var t = ((now - holdStart) % 1600) / 1600;
+                var pulse = Math.sin(t * Math.PI * 2) * 0.5 + 0.5; // 0..1
+                drawLetters(NAME_TEXT.length, 1, pulse);
+                penRafId = requestAnimationFrame(holdPulse);
+              }
+              penRafId = requestAnimationFrame(holdPulse);
+
+              var htid = setTimeout(function() {
+                cancelAnimationFrame(penRafId);
+                startFade();
+              }, HOLD_MS);
               penTimeoutIds.push(htid);
             }
           }
@@ -263,6 +285,7 @@ export function InteractivePortfolio() {
         if ((document as any).fonts && (document as any).fonts.ready) {
           (document as any).fonts.ready.then(function() {
             if (penCtx) {
+              resizePenCanvas();
               letterXPositions = getLetterXPositions(penCtx);
             }
           });
@@ -1570,7 +1593,9 @@ export function InteractivePortfolio() {
         if (overlay) {
           overlay.classList.add('leaving');
           setTimeout(function () {
-            if (overlay && overlay.parentNode) overlay.parentNode.removeChild(overlay);
+            if (overlay) {
+              overlay.style.display = 'none';
+            }
           }, 750);
         }
       }
