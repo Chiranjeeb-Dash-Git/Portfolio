@@ -125,9 +125,27 @@ section {
 }
 
 .name-canvas {
+  position: relative;
+  z-index: 1;
   display: block;
   width: 100%;
   height: auto;
+}
+
+.name-title {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: flex-start;
+  padding: 0 10px;
+  color: #ffd76a;
+  font-family: 'Dancing Script', 'Brush Script MT', 'Great Vibes', cursive;
+  font-size: clamp(2rem, 10vw, 6.5rem);
+  font-weight: 700;
+  line-height: 1.1;
+  pointer-events: none;
+  text-shadow: 0 0 18px rgba(255, 69, 0, .45);
+  white-space: nowrap;
 }
 
 .pen-nib {

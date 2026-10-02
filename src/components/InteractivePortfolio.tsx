@@ -2106,6 +2106,7 @@ export function InteractivePortfolio() {
               </span>
             </div>
             <div className="name-pen-container" id="name-pen-wrap">
+              <div className="name-title" aria-label="Chiranjeeb Dash">Chiranjeeb Dash</div>
               <canvas id="name-canvas" className="name-canvas" />
               <div className="pen-nib" id="pen-nib-el">✒️</div>
             </div>
