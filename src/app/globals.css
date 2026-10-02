@@ -556,6 +556,37 @@ body.editing .tl-item {
   box-shadow: 0 0 calc(12px * var(--gmul)) -3px rgba(var(--accent2-rgb),.5);
 }
 
+.cert-copy {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.credential-meta {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 5px;
+  color: var(--dim);
+  font-size: .68rem;
+  max-width: 100%;
+}
+
+.credential-label {
+  color: var(--accent2);
+  font-size: .62rem;
+  font-weight: 700;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.credential-id {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .cert-badge svg.aw {
   width: 14px;
   height: 14px;
@@ -993,6 +1024,32 @@ body.editing #t-save, body.editing #t-undo {
   padding: 10px;
   font-size: .88rem;
   font-family: var(--font-body);
+}
+
+.credential-form-label {
+  display: block;
+  color: var(--dim);
+  font-size: .72rem;
+  font-weight: 700;
+  letter-spacing: .04em;
+  margin: .65rem 0 .3rem;
+  text-transform: uppercase;
+}
+
+#lm-credential-id {
+  width: 100%;
+  background: rgba(var(--ink-rgb),.06);
+  border: 1px solid var(--line);
+  color: var(--ink);
+  border-radius: 8px;
+  padding: 10px;
+  font-size: .88rem;
+  font-family: var(--font-body);
+}
+
+#lm-credential-id:focus {
+  border-color: var(--accent);
+  outline: none;
 }
 
 .orsep {

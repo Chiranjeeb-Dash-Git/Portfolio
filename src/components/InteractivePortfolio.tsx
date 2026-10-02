@@ -340,9 +340,9 @@ export function InteractivePortfolio() {
         { title: 'Diploma engineering', meta: 'Central Institute of Petrochemical Engineering and Technology · 2019 — 2021', url: '' },
       ],
       certs: [
-        { name: 'Full stack web development — MERN stack', url: '', img: '' },
-        { name: 'Web development internship', url: '', img: '' },
-        { name: 'Production AI agents with JavaScript: LangChain and LangGraph', url: '', img: '' },
+        { name: 'Full stack web development — MERN stack', credentialId: '', url: '', img: '' },
+        { name: 'Web development internship', credentialId: '', url: '', img: '' },
+        { name: 'Production AI agents with JavaScript: LangChain and LangGraph', credentialId: '', url: '', img: '' },
       ],
       contact: [
         { label: 'Gmail', value: '', icon: 'gmail', url: 'https://mail.google.com/mail/?view=cm&fs=1&to=chiranjeeb.email@gmail.com' },
@@ -555,7 +555,7 @@ export function InteractivePortfolio() {
       projects: { name: 'New project', desc: 'Short description.', meta: 'Stack', url: '' },
       exp: { title: 'New role', meta: 'Company · dates', url: '' },
       edu: { title: 'New qualification', meta: 'Institution · dates', url: '' },
-      certs: { name: 'New certificate', url: '', img: '' },
+      certs: { name: 'New certificate', credentialId: '', url: '', img: '' },
       contact: { label: 'New link', value: '', icon: '', url: '' },
     };
     function normUrl(v: any) {
@@ -659,7 +659,10 @@ export function InteractivePortfolio() {
       c.innerHTML = '';
       S.certs.forEach(function (e: any, i: number) {
         var thumb = e.img ? '<img class="thumb" src="' + e.img + '">' : AWARD;
-        c.appendChild(card('cert-badge', 'certs', i, e, thumb + ed('name', e.name), !!e.img));
+        var credential = e.credentialId
+          ? '<span class="credential-meta"><span class="credential-label">Credential ID</span>' + ed('credentialId', e.credentialId, 'credential-id') + '</span>'
+          : '';
+        c.appendChild(card('cert-badge', 'certs', i, e, thumb + '<span class="cert-copy">' + ed('name', e.name) + credential + '</span>', !!e.img));
       });
       c.appendChild(addCard('certs', '+ Add certificate', 'add-card cert-add'));
     }
@@ -953,18 +956,26 @@ export function InteractivePortfolio() {
     function openLink(l: string, i: number) {
       LM = { list: l, i: i };
       var it = getList(l)[i];
-      $('#lm-in').value = it.url && !/^https:\/\/mail\.google\.com/.test(it.url) ? it.url : it.url || '';
       var isCert = l === 'certs';
+      $('#lm-in').value = it.url && !/^https:\/\/mail\.google\.com/.test(it.url) ? it.url : it.url || '';
+      var credentialId = $('#lm-credential-id') as HTMLInputElement | null;
+      if (credentialId) credentialId.value = isCert ? it.credentialId || '' : '';
+      var credentialField = $('#lm-credential-wrap');
+      if (credentialField) credentialField.style.display = isCert ? 'block' : 'none';
+      var urlLabel = $('#lm-url-label');
+      var urlInput = $('#lm-in') as HTMLInputElement | null;
+      if (urlLabel) urlLabel.textContent = isCert ? 'Verification URL (optional)' : 'Link or contact value';
+      if (urlInput) urlInput.placeholder = isCert ? 'https://www.linkedin.com/learning/certificates/…' : 'https://… or name@email.com';
       $('#lm-photo-wrap').style.display = isCert ? 'block' : 'none';
-      $('#lm-title').textContent = isCert ? 'Certificate link or photo' : 'Card link';
+      $('#lm-title').textContent = isCert ? 'Certificate credential' : 'Card link';
       $('#lm-desc').textContent = isCert
-        ? 'Add a link to view the certificate online, or attach a photo of it instead.'
+        ? 'Add the credential ID and verification URL. If you enter only an ID, a LinkedIn-style verification URL is generated automatically.'
         : 'Paste a website URL, an email address or a phone number. Clicking the card opens it.';
       $('#lm-preview').innerHTML = it.img ? '<img src="' + it.img + '" style="max-width:100%;max-height:120px;border-radius:8px;">' : '';
       $('#lm-file').value = '';
       $('#lm').classList.add('open');
       setTimeout(function () {
-        $('#lm-in').focus();
+        (isCert ? $('#lm-credential-id') : $('#lm-in')).focus();
       }, 30);
     }
     function closeLM() {
@@ -975,7 +986,20 @@ export function InteractivePortfolio() {
       snapshot();
       var it = getList(LM.list!)[LM.i],
         v = $('#lm-in').value.trim();
-      if (v) {
+      if (LM.list === 'certs') {
+        var credentialIdInput = $('#lm-credential-id') as HTMLInputElement | null;
+        var credentialId = credentialIdInput ? credentialIdInput.value.trim() : '';
+        it.credentialId = credentialId;
+        if (credentialId && !v) {
+          v = 'https://www.linkedin.com/learning/certificates/' + encodeURIComponent(credentialId);
+        }
+        if (v) {
+          it.url = normUrl(v);
+          it.img = '';
+        } else if (!it.img) {
+          it.url = '';
+        }
+      } else if (v) {
         it.url = normUrl(v);
         it.img = '';
       }
@@ -995,6 +1019,10 @@ export function InteractivePortfolio() {
       if ((e.target as HTMLElement).id === 'lm') closeLM();
     });
     $('#lm-in').addEventListener('keydown', function (e: KeyboardEvent) {
+      if (e.key === 'Enter') $('#lm-save').click();
+      if (e.key === 'Escape') closeLM();
+    });
+    $('#lm-credential-id').addEventListener('keydown', function (e: KeyboardEvent) {
       if (e.key === 'Enter') $('#lm-save').click();
       if (e.key === 'Escape') closeLM();
     });
@@ -1963,6 +1991,11 @@ export function InteractivePortfolio() {
         <div className="mbox">
           <h3 id="lm-title">Card link</h3>
           <p id="lm-desc">Paste a website URL, an email address or a phone number. Clicking the card opens it.</p>
+          <div id="lm-credential-wrap" style={{ display: 'none' }}>
+            <label className="credential-form-label" htmlFor="lm-credential-id">Credential ID</label>
+            <input id="lm-credential-id" placeholder="e.g. ABC123XYZ" autoComplete="off" />
+          </div>
+          <label className="credential-form-label" id="lm-url-label" htmlFor="lm-in">Verification URL</label>
           <input id="lm-in" placeholder="https://… or name@email.com" autoComplete="off" />
           <div id="lm-photo-wrap" style={{ display: 'none' }}>
             <div className="orsep">or</div>
