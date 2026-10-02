@@ -340,9 +340,9 @@ export function InteractivePortfolio() {
         { title: 'Diploma engineering', meta: 'Central Institute of Petrochemical Engineering and Technology · 2019 — 2021', url: '' },
       ],
       certs: [
-        { name: 'Full stack web development — MERN stack', credentialId: '', url: '', img: '' },
-        { name: 'Web development internship', credentialId: '', url: '', img: '' },
-        { name: 'Production AI agents with JavaScript: LangChain and LangGraph', credentialId: '', url: '', img: '' },
+        { name: 'Full stack web development — MERN stack', credentialId: '', url: '', img: '', mediaType: '' },
+        { name: 'Web development internship', credentialId: '', url: '', img: '', mediaType: '' },
+        { name: 'Production AI agents with JavaScript: LangChain and LangGraph', credentialId: '', url: '', img: '', mediaType: '' },
       ],
       contact: [
         { label: 'Gmail', value: '', icon: 'gmail', url: 'https://mail.google.com/mail/?view=cm&fs=1&to=chiranjeeb.email@gmail.com' },
@@ -555,7 +555,7 @@ export function InteractivePortfolio() {
       projects: { name: 'New project', desc: 'Short description.', meta: 'Stack', url: '' },
       exp: { title: 'New role', meta: 'Company · dates', url: '' },
       edu: { title: 'New qualification', meta: 'Institution · dates', url: '' },
-      certs: { name: 'New certificate', credentialId: '', url: '', img: '' },
+      certs: { name: 'New certificate', credentialId: '', url: '', img: '', mediaType: '' },
       contact: { label: 'New link', value: '', icon: '', url: '' },
     };
     function normUrl(v: any) {
@@ -658,7 +658,11 @@ export function InteractivePortfolio() {
       if (!c) return;
       c.innerHTML = '';
       S.certs.forEach(function (e: any, i: number) {
-        var thumb = e.img ? '<img class="thumb" src="' + e.img + '">' : AWARD;
+        var thumb = e.img
+          ? e.mediaType === 'pdf'
+            ? '<span class="pdf-thumb" aria-label="PDF certificate">PDF</span>'
+            : '<img class="thumb" src="' + e.img + '" alt="Certificate preview">'
+          : AWARD;
         var credential = e.credentialId
           ? '<span class="credential-meta"><span class="credential-label">Credential ID</span>' + ed('credentialId', e.credentialId, 'credential-id') + '</span>'
           : '';
@@ -821,7 +825,7 @@ export function InteractivePortfolio() {
       var iv: HTMLImageElement | null = t.closest('.cert-badge img.thumb');
       if (iv) {
         e.preventDefault();
-        openImgView(iv.src);
+        openCertificateView(iv.src, 'image');
         return;
       }
       var c: HTMLAnchorElement | null = t.closest('a.c');
@@ -833,7 +837,7 @@ export function InteractivePortfolio() {
         var it = getList(c.dataset.list!)[+c.dataset.i!];
         if (it && it.img) {
           e.preventDefault();
-          openImgView(it.img);
+          openCertificateView(it.img, it.mediaType === 'pdf' ? 'pdf' : 'image');
         }
       }
     };
@@ -978,9 +982,13 @@ export function InteractivePortfolio() {
       $('#lm-photo-wrap').style.display = isCert ? 'block' : 'none';
       $('#lm-title').textContent = isCert ? 'Certificate credential' : 'Card link';
       $('#lm-desc').textContent = isCert
-        ? 'Add the credential ID and verification URL. Attach a certificate photo to open the certificate directly in this portfolio.'
+        ? 'Add the credential ID and verification URL. Attach a certificate photo or PDF to open it directly in this portfolio.'
         : 'Paste a website URL, an email address or a phone number. Clicking the card opens it.';
-      $('#lm-preview').innerHTML = it.img ? '<img src="' + it.img + '" style="max-width:100%;max-height:120px;border-radius:8px;">' : '';
+      $('#lm-preview').innerHTML = it.img
+        ? it.mediaType === 'pdf'
+          ? '<span class="pdf-preview">PDF certificate attached</span>'
+          : '<img src="' + it.img + '" style="max-width:100%;max-height:120px;border-radius:8px;" alt="Certificate preview">'
+        : '';
       $('#lm-file').value = '';
       $('#lm').classList.add('open');
       setTimeout(function () {
@@ -1019,6 +1027,7 @@ export function InteractivePortfolio() {
       var it = getList(LM.list!)[LM.i];
       it.url = '';
       it.img = '';
+      it.mediaType = '';
       closeLM();
       renderAll();
     };
@@ -1037,22 +1046,58 @@ export function InteractivePortfolio() {
     $('#lm-file').addEventListener('change', function (this: HTMLInputElement) {
       var f = this.files && this.files[0];
       if (!f) return;
+      var isPdf = f.type === 'application/pdf' || /\.pdf$/i.test(f.name);
+      var isImage = /^image\/(png|jpeg|jpg|webp|gif)$/i.test(f.type);
+      if (f.size > 4 * 1024 * 1024) {
+        this.value = '';
+        $('#lm-preview').textContent = 'Please choose a file smaller than 4 MB.';
+        return;
+      }
+      if (!isImage && !isPdf) {
+        this.value = '';
+        $('#lm-preview').textContent = 'Please choose an image or PDF certificate.';
+        return;
+      }
       var r = new FileReader();
       snapshot();
       r.onload = function () {
         var it = getList(LM.list!)[LM.i];
         it.img = r.result as string;
-        $('#lm-preview').innerHTML = '<img src="' + r.result + '" style="max-width:100%;max-height:120px;border-radius:8px;">';
+        it.mediaType = isPdf ? 'pdf' : 'image';
+        $('#lm-preview').innerHTML = it.mediaType === 'pdf'
+          ? '<span class="pdf-preview">PDF certificate attached</span>'
+          : '<img src="' + r.result + '" style="max-width:100%;max-height:120px;border-radius:8px;" alt="Certificate preview">';
       };
       r.readAsDataURL(f);
     });
 
-    function openImgView(src: string) {
-      ($('#imgview-img') as HTMLImageElement).src = src;
+    function openCertificateView(src: string, mediaType: 'image' | 'pdf') {
+      var image = $('#imgview-img') as HTMLImageElement | null;
+      var pdf = $('#imgview-pdf') as HTMLIFrameElement | null;
+      var fallback = $('#imgview-fallback');
+      if (image) {
+        image.style.display = mediaType === 'image' ? 'block' : 'none';
+        image.src = mediaType === 'image' ? src : '';
+      }
+      if (pdf) {
+        pdf.style.display = mediaType === 'pdf' ? 'block' : 'none';
+        pdf.src = mediaType === 'pdf' ? src : 'about:blank';
+        pdf.onerror = function () {
+          if (fallback) fallback.style.display = 'block';
+        };
+      }
+      if (fallback) {
+        fallback.style.display = 'none';
+        var link = fallback.querySelector('a') as HTMLAnchorElement | null;
+        if (link) link.href = mediaType === 'pdf' ? src : '#';
+      }
       $('#imgview').classList.add('open');
     }
-    $('#imgview').addEventListener('click', function (this: HTMLElement) {
-      this.classList.remove('open');
+    $('#imgview').addEventListener('click', function (this: HTMLElement, e: MouseEvent) {
+      if (e.target === this || (e.target as HTMLElement).id === 'imgview-close') this.classList.remove('open');
+    });
+    document.addEventListener('keydown', function (e: KeyboardEvent) {
+      if (e.key === 'Escape') $('#imgview').classList.remove('open');
     });
 
     /* ---------- Theme & Effects & Fonts ---------- */
@@ -2007,8 +2052,8 @@ export function InteractivePortfolio() {
           <div id="lm-photo-wrap" style={{ display: 'none' }}>
             <div className="orsep">or</div>
             <label className="filebtn">
-              📷 Attach certificate photo for direct viewing
-              <input type="file" id="lm-file" accept="image/*" style={{ display: 'none' }} />
+              📎 Attach certificate photo or PDF for direct viewing
+              <input type="file" id="lm-file" accept="image/*,.pdf,application/pdf" style={{ display: 'none' }} />
             </label>
             <div id="lm-preview" style={{ marginTop: '8px', textAlign: 'center' }}></div>
           </div>
@@ -2023,8 +2068,15 @@ export function InteractivePortfolio() {
       </div>
 
       <div className="modal" id="imgview">
-        <span className="x">×</span>
-        <img id="imgview-img" src={undefined} alt="Certificate" />
+        <div className="certificate-viewer" role="dialog" aria-modal="true" aria-label="Certificate preview">
+          <button className="x" id="imgview-close" type="button" aria-label="Close certificate preview">×</button>
+          <img id="imgview-img" src={undefined} alt="Certificate" />
+          <iframe id="imgview-pdf" title="Certificate PDF preview" src="about:blank" />
+          <div id="imgview-fallback" className="certificate-fallback">
+            <p>Your browser could not preview this PDF inline.</p>
+            <a href="#" target="_blank" rel="noopener noreferrer">Open PDF in a new tab</a>
+          </div>
+        </div>
       </div>
 
       <main>
