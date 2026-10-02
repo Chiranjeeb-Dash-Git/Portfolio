@@ -1062,6 +1062,24 @@ export function InteractivePortfolio() {
         $('#lm-preview').innerHTML = it.mediaType === 'pdf'
           ? '<span class="pdf-preview">PDF certificate attached</span>'
           : '<img src="' + r.result + '" style="max-width:100%;max-height:120px;border-radius:8px;" alt="Certificate preview">';
+        var preview = $('#lm-preview');
+        preview.insertAdjacentHTML('beforeend', '<div class="upload-status">Saving certificate permanently…</div>');
+        try {
+          localStorage.setItem(LS, JSON.stringify(S));
+        } catch (error) {
+          // Large files may exceed the browser cache; Neon is the durable store.
+        }
+        void syncToNeon()
+          .then(function () {
+            if (LM.list === selectedList && LM.i === selectedIndex) {
+              preview.insertAdjacentHTML('beforeend', '<div class="upload-status">Saved permanently ✓</div>');
+            }
+          })
+          .catch(function () {
+            if (LM.list === selectedList && LM.i === selectedIndex) {
+              preview.insertAdjacentHTML('beforeend', '<div class="upload-status upload-status-error">Could not reach Neon — please retry.</div>');
+            }
+          });
       };
       r.readAsDataURL(f);
     });
