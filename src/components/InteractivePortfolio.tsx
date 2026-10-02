@@ -1198,8 +1198,140 @@ export function InteractivePortfolio() {
       }
     })();
 
+    /* ---------- Editor PIN protection ---------- */
+    var PIN_KEY = 'portfolio_editor_pin';
+    var DEFAULT_PIN = '7854';
+    var editorUnlocked = false;
+    var pendingEditorAction: 'edit' | 'customize' | null = null;
+
+    function getEditorPin() {
+      try {
+        var stored = localStorage.getItem(PIN_KEY);
+        return stored && /^\d{4,12}$/.test(stored) ? stored : DEFAULT_PIN;
+      } catch (e) {
+        return DEFAULT_PIN;
+      }
+    }
+
+    function closePinModals() {
+      if ($('#pin-gate')) $('#pin-gate').classList.remove('open');
+      if ($('#pin-reset')) $('#pin-reset').classList.remove('open');
+    }
+
+    function focusPinInput(id: string) {
+      window.setTimeout(function () {
+        var input = $(id) as HTMLInputElement | null;
+        if (input) input.focus();
+      }, 0);
+    }
+
+    function openPinGate(action: 'edit' | 'customize', message?: string) {
+      pendingEditorAction = action;
+      var title = $('#pin-gate-title');
+      var desc = $('#pin-gate-desc');
+      var input = $('#pin-gate-input') as HTMLInputElement | null;
+      var error = $('#pin-gate-error');
+      if (title) title.textContent = action === 'edit' ? 'Unlock edit mode' : 'Unlock customization';
+      if (desc) desc.textContent = message || 'Enter your PIN to access portfolio editing tools.';
+      if (input) input.value = '';
+      if (error) error.textContent = '';
+      if ($('#pin-reset')) $('#pin-reset').classList.remove('open');
+      if ($('#pin-gate')) $('#pin-gate').classList.add('open');
+      focusPinInput('pin-gate-input');
+    }
+
+    function runEditorAction(action: 'edit' | 'customize') {
+      if (action === 'customize') {
+        $('#drawer').classList.toggle('open');
+        return;
+      }
+      document.body.classList.toggle('editing');
+      var on = document.body.classList.contains('editing');
+      var editButton = $('#t-edit');
+      if (editButton) editButton.textContent = 'Edit mode: ' + (on ? 'on' : 'off');
+      applyEditable();
+    }
+
+    function unlockEditor() {
+      var input = $('#pin-gate-input') as HTMLInputElement | null;
+      var error = $('#pin-gate-error');
+      if (!input || input.value !== getEditorPin()) {
+        if (error) error.textContent = 'Incorrect PIN. Try again.';
+        input?.select();
+        return;
+      }
+      editorUnlocked = true;
+      var action = pendingEditorAction;
+      pendingEditorAction = null;
+      closePinModals();
+      if (action) runEditorAction(action);
+    }
+
+    function openPinReset() {
+      if ($('#pin-gate')) $('#pin-gate').classList.remove('open');
+      var error = $('#pin-reset-error');
+      if (error) error.textContent = '';
+      ['pin-old', 'pin-new', 'pin-confirm'].forEach(function (id) {
+        var input = $('#' + id) as HTMLInputElement | null;
+        if (input) input.value = '';
+      });
+      if ($('#pin-reset')) $('#pin-reset').classList.add('open');
+      focusPinInput('pin-old');
+    }
+
+    function resetEditorPin() {
+      var oldPin = ($('#pin-old') as HTMLInputElement | null)?.value || '';
+      var newPin = ($('#pin-new') as HTMLInputElement | null)?.value || '';
+      var confirmPin = ($('#pin-confirm') as HTMLInputElement | null)?.value || '';
+      var error = $('#pin-reset-error');
+      if (oldPin !== getEditorPin()) {
+        if (error) error.textContent = 'The current PIN is incorrect.';
+        return;
+      }
+      if (!/^\d{4,12}$/.test(newPin)) {
+        if (error) error.textContent = 'Use a new PIN with 4–12 digits.';
+        return;
+      }
+      if (newPin !== confirmPin) {
+        if (error) error.textContent = 'The new PIN entries do not match.';
+        return;
+      }
+      try {
+        localStorage.setItem(PIN_KEY, newPin);
+        editorUnlocked = false;
+        var action = pendingEditorAction || 'customize';
+        closePinModals();
+        openPinGate(action, 'PIN updated. Enter your new PIN to continue.');
+      } catch (e) {
+        if (error) error.textContent = 'PIN could not be saved in this browser.';
+      }
+    }
+
+    if ($('#pin-gate-confirm')) $('#pin-gate-confirm').onclick = unlockEditor;
+    if ($('#pin-gate-reset')) $('#pin-gate-reset').onclick = openPinReset;
+    if ($('#pin-gate-cancel')) $('#pin-gate-cancel').onclick = closePinModals;
+    if ($('#pin-reset-save')) $('#pin-reset-save').onclick = resetEditorPin;
+    if ($('#pin-reset-cancel')) $('#pin-reset-cancel').onclick = function () {
+      closePinModals();
+      pendingEditorAction = null;
+    };
+    ['pin-gate-input', 'pin-old', 'pin-new', 'pin-confirm'].forEach(function (id) {
+      var input = $('#' + id) as HTMLInputElement | null;
+      if (input) input.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          if (id === 'pin-gate-input') unlockEditor();
+          if (id === 'pin-confirm') resetEditorPin();
+        }
+      });
+    });
+
     if ($('#t-custom')) $('#t-custom').onclick = function () {
-      $('#drawer').classList.toggle('open');
+      if (!editorUnlocked) {
+        openPinGate('customize');
+        return;
+      }
+      runEditorAction('customize');
     };
     if ($('#d-close')) $('#d-close').onclick = function () {
       $('#drawer').classList.remove('open');
@@ -1307,10 +1439,12 @@ export function InteractivePortfolio() {
     var btnEdit = $('#t-edit');
     if (btnEdit) {
       btnEdit.onclick = function (this: HTMLButtonElement) {
-        document.body.classList.toggle('editing');
-        var on = document.body.classList.contains('editing');
-        this.textContent = 'Edit mode: ' + (on ? 'on' : 'off');
-        applyEditable();
+        var isEditing = document.body.classList.contains('editing');
+        if (!isEditing && !editorUnlocked) {
+          openPinGate('edit');
+          return;
+        }
+        runEditorAction('edit');
       };
     }
 
@@ -1790,6 +1924,39 @@ export function InteractivePortfolio() {
           Reset everything
         </button>
         <div className="note">Fonts marked ATS are standard, resume-safe choices. Changes save in this browser only.</div>
+      </div>
+
+      <div className="modal" id="pin-gate" role="dialog" aria-modal="true" aria-labelledby="pin-gate-title">
+        <div className="mbox pin-box">
+          <h3 id="pin-gate-title">Unlock editor</h3>
+          <p id="pin-gate-desc">Enter your PIN to access portfolio editing tools.</p>
+          <label className="pin-label" htmlFor="pin-gate-input">PIN</label>
+          <input id="pin-gate-input" className="pin-input" type="password" inputMode="numeric" pattern="[0-9]*" maxLength={12} autoComplete="off" />
+          <div className="pin-error" id="pin-gate-error" role="alert" />
+          <div className="mrow">
+            <button id="pin-gate-cancel">Cancel</button>
+            <button id="pin-gate-reset" className="ghost-action">Reset PIN</button>
+            <button id="pin-gate-confirm" className="primary">Unlock</button>
+          </div>
+        </div>
+      </div>
+
+      <div className="modal" id="pin-reset" role="dialog" aria-modal="true" aria-labelledby="pin-reset-title">
+        <div className="mbox pin-box">
+          <h3 id="pin-reset-title">Reset editor PIN</h3>
+          <p>Confirm your current PIN, then choose a new 4–12 digit PIN.</p>
+          <label className="pin-label" htmlFor="pin-old">Current PIN</label>
+          <input id="pin-old" className="pin-input" type="password" inputMode="numeric" pattern="[0-9]*" maxLength={12} autoComplete="off" />
+          <label className="pin-label" htmlFor="pin-new">New PIN</label>
+          <input id="pin-new" className="pin-input" type="password" inputMode="numeric" pattern="[0-9]*" maxLength={12} autoComplete="new-password" />
+          <label className="pin-label" htmlFor="pin-confirm">Confirm new PIN</label>
+          <input id="pin-confirm" className="pin-input" type="password" inputMode="numeric" pattern="[0-9]*" maxLength={12} autoComplete="new-password" />
+          <div className="pin-error" id="pin-reset-error" role="alert" />
+          <div className="mrow">
+            <button id="pin-reset-cancel">Cancel</button>
+            <button id="pin-reset-save" className="primary">Save new PIN</button>
+          </div>
+        </div>
       </div>
 
       <div className="modal" id="lm">
