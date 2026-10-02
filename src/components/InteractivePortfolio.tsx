@@ -105,10 +105,21 @@ export function InteractivePortfolio() {
       var FADE_MS = 700;         // ms to fade out
       var PAUSE_MS = 350;        // ms gap before restart
 
-      // Responsive font size: ~14% of panel width, clamped 80-160px
+      // Responsive font size that also guarantees the complete name fits the canvas.
       function getFontSize() {
         var w = penWrap ? (penWrap.offsetWidth || 680) : 680;
-        return Math.min(160, Math.max(80, Math.round(w * 0.14)));
+        var preferred = Math.min(160, Math.max(56, Math.round(w * 0.14)));
+        var measureCanvas = document.createElement('canvas');
+        var measureCtx = measureCanvas.getContext('2d');
+        if (measureCtx) {
+          measureCtx.font = 'bold ' + preferred + 'px ' + FONT_FAMILY;
+          var measuredWidth = measureCtx.measureText(NAME_TEXT).width;
+          var availableWidth = Math.max(1, w - 24);
+          if (measuredWidth > availableWidth) {
+            preferred = Math.floor(preferred * (availableWidth / measuredWidth));
+          }
+        }
+        return Math.max(44, preferred);
       }
 
       // Vibrant poppy colors
