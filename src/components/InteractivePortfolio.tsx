@@ -140,8 +140,10 @@ export function InteractivePortfolio() {
         penCanvas.style.height = cssH + 'px';
       }
 
-      function getGradient(ctx2d: CanvasRenderingContext2D, textWidth: number) {
-        var g = ctx2d.createLinearGradient(0, 0, Math.max(textWidth, 500), 0);
+      function getGradient(ctx2d: CanvasRenderingContext2D, textWidth: number, shift = 0) {
+        var width = Math.max(textWidth, 500);
+        var offset = shift * width * 0.18;
+        var g = ctx2d.createLinearGradient(offset, 0, width + offset, 0);
         GRAD_STOPS.forEach(function(s) { g.addColorStop(s.pos, s.color); });
         return g;
       }
@@ -169,7 +171,7 @@ export function InteractivePortfolio() {
         var letterXPositions: number[] = [];
         var loopStarted = false;
 
-        function drawLetters(count: number, alpha: number, glowBoost?: number) {
+        function drawLetters(count: number, alpha: number, shine = 0) {
           if (!penCanvas || !penCtx) return;
           var dpr = window.devicePixelRatio || 1;
           var W = penCanvas.width;
@@ -182,18 +184,28 @@ export function InteractivePortfolio() {
           penCtx.save();
           penCtx.globalAlpha = alpha;
 
-          // Glow — boosted during hold pulse
-          var blur = (24 + (glowBoost || 0) * 18) * dpr;
-          penCtx.shadowColor = '#ff4500';
-          penCtx.shadowBlur = blur;
-
           var fontSizeScaled = Math.round(fs * dpr);
           penCtx.font = 'bold ' + fontSizeScaled + 'px ' + FONT_FAMILY;
-          penCtx.fillStyle = getGradient(penCtx, W);
           penCtx.textBaseline = 'alphabetic';
 
           var sub = NAME_TEXT.substring(0, count);
-          penCtx.fillText(sub, Math.round(10 * dpr), Math.round(H * 0.80));
+          var x = Math.round(10 * dpr);
+          var y = Math.round(H * 0.80);
+          var depth = Math.max(3, Math.round(fs * 0.055));
+
+          // Layered offset copies create a clean, physical 3D edge without a glow.
+          for (var z = depth; z >= 1; z--) {
+            penCtx.fillStyle = z % 2 === 0 ? '#8f2417' : '#6d1d17';
+            penCtx.fillText(sub, x + z * dpr, y + z * dpr);
+          }
+
+          // A restrained highlight sweep gives the face a polished dimensional feel.
+          var highlight = getGradient(penCtx, W, shine);
+          penCtx.fillStyle = highlight;
+          penCtx.strokeStyle = 'rgba(255, 235, 180, .72)';
+          penCtx.lineWidth = Math.max(1, dpr * 0.7);
+          penCtx.strokeText(sub, x, y);
+          penCtx.fillText(sub, x, y);
 
           penCtx.restore();
         }
