@@ -1059,9 +1059,13 @@ export function InteractivePortfolio() {
         return;
       }
       var r = new FileReader();
+      var selectedList = LM.list;
+      var selectedIndex = LM.i;
       snapshot();
       r.onload = function () {
-        var it = getList(LM.list!)[LM.i];
+        if (!selectedList || LM.list !== selectedList || LM.i !== selectedIndex) return;
+        var it = getList(selectedList)[selectedIndex];
+        if (!it) return;
         it.img = r.result as string;
         it.mediaType = isPdf ? 'pdf' : 'image';
         $('#lm-preview').innerHTML = it.mediaType === 'pdf'
