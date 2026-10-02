@@ -101,9 +101,6 @@ export function InteractivePortfolio() {
       var NAME_TEXT = 'Chiranjeeb Dash';
       var FONT_FAMILY = "'Dancing Script', 'Brush Script MT', 'Great Vibes', cursive";
       var LETTER_DELAY_MS = 100; // ms between each letter
-      var HOLD_MS = 2800;        // ms to hold completed name
-      var FADE_MS = 700;         // ms to fade out
-      var PAUSE_MS = 350;        // ms gap before restart
 
       // Responsive font size that also guarantees the complete name fits the canvas.
       function getFontSize() {
@@ -168,7 +165,6 @@ export function InteractivePortfolio() {
 
       if (penCtx) {
         var currentLetterCount = 0;
-        var canvasAlpha = 1;
         var phase: 'writing' | 'holding' | 'fading' | 'pausing' = 'writing';
         var letterXPositions: number[] = [];
         var loopStarted = false;
@@ -224,7 +220,6 @@ export function InteractivePortfolio() {
           resizePenCanvas();
           letterXPositions = getLetterXPositions(penCtx);
           currentLetterCount = 0;
-          canvasAlpha = 1;
           phase = 'writing';
 
           function writeNextLetter() {
@@ -250,35 +245,8 @@ export function InteractivePortfolio() {
               }
               penRafId = requestAnimationFrame(holdPulse);
 
-              var htid = setTimeout(function() {
-                cancelAnimationFrame(penRafId);
-                startFade();
-              }, HOLD_MS);
-              penTimeoutIds.push(htid);
+              // Keep the completed handwriting visible after the pen finishes.
             }
-          }
-
-          function startFade() {
-            if (phase !== 'holding') return;
-            phase = 'fading';
-            var startTime = performance.now();
-            function fadeStep(now: number) {
-              var elapsed = now - startTime;
-              var t = Math.min(elapsed / FADE_MS, 1);
-              canvasAlpha = 1 - t;
-              drawLetters(NAME_TEXT.length, canvasAlpha);
-              if (t < 1) {
-                penRafId = requestAnimationFrame(fadeStep);
-              } else {
-                if (!penCanvas || !penCtx) return;
-                penCtx.clearRect(0, 0, penCanvas.width, penCanvas.height);
-                phase = 'pausing';
-                loopStarted = false;
-                var ptid = setTimeout(startWritingLoop, PAUSE_MS);
-                penTimeoutIds.push(ptid);
-              }
-            }
-            penRafId = requestAnimationFrame(fadeStep);
           }
 
           writeNextLetter();
@@ -2106,7 +2074,6 @@ export function InteractivePortfolio() {
               </span>
             </div>
             <div className="name-pen-container" id="name-pen-wrap">
-              <div className="name-title" aria-label="Chiranjeeb Dash">Chiranjeeb Dash</div>
               <canvas id="name-canvas" className="name-canvas" />
               <div className="pen-nib" id="pen-nib-el">✒️</div>
             </div>
