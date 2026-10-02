@@ -1893,12 +1893,15 @@ export function InteractivePortfolio() {
         sectionObserver.observe(sec);
       });
 
-      // Observe individual cards for reveal — replay every scroll
+      // Observe individual cards for reveal and keep track of cards on screen.
+      var visibleCards = new Set<Element>();
       var cardObserver = new IntersectionObserver(function (entries) {
         entries.forEach(function (entry) {
           if (entry.isIntersecting) {
+            visibleCards.add(entry.target);
             entry.target.classList.add('revealed');
           } else {
+            visibleCards.delete(entry.target);
             entry.target.classList.remove('revealed');
           }
         });
@@ -1907,6 +1910,27 @@ export function InteractivePortfolio() {
       document.querySelectorAll('.scroll-reveal').forEach(function (el) {
         cardObserver.observe(el);
       });
+
+      // Replay a directional motion on every meaningful scroll movement.
+      var lastScrollY = window.scrollY;
+      var scrollFrame = 0;
+      function replayVisibleCards() {
+        scrollFrame = 0;
+        var currentScrollY = window.scrollY;
+        if (Math.abs(currentScrollY - lastScrollY) < 2) return;
+        var direction = currentScrollY > lastScrollY ? 'down' : 'up';
+        lastScrollY = currentScrollY;
+        visibleCards.forEach(function (el) {
+          el.classList.remove('scroll-motion-down', 'scroll-motion-up');
+          // Force a reflow so the animation restarts on every scroll event.
+          void (el as HTMLElement).offsetWidth;
+          el.classList.add('scroll-motion-' + direction);
+        });
+      }
+      function onCardScroll() {
+        if (!scrollFrame) scrollFrame = requestAnimationFrame(replayVisibleCards);
+      }
+      window.addEventListener('scroll', onCardScroll, { passive: true });
     }
 
     // Hook into renderAll for scroll reveal re-application
