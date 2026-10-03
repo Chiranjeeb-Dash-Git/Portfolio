@@ -15,6 +15,9 @@
   --line: rgba(var(--ink-rgb),.1);
   --font-head: 'Bodoni Moda', serif;
   --font-body: 'Manrope', sans-serif;
+  --name-font: 'Dancing Script', cursive;
+  --name-scale: 1;
+  --text-scale: 1;
   --gmul: 1;
 }
 
@@ -100,7 +103,7 @@ section {
 
 .kicker {
   color: var(--accent2);
-  font-size: .8rem;
+  font-size: calc(.8rem * var(--text-scale));
   margin-bottom: .5rem;
   font-weight: 600;
   text-shadow: 0 0 calc(8px * var(--gmul)) rgba(var(--accent2-rgb),.7), 0 0 calc(18px * var(--gmul)) rgba(var(--accent2-rgb),.35);
@@ -113,10 +116,103 @@ section {
   position: relative;
   width: 100%;
   max-width: 100%;
-  margin-bottom: 0;
+  container-type: inline-size;
+  /* Reserve breathing room that grows with the selected headline size. */
+  padding-bottom: clamp(.55rem, calc(.85rem * var(--name-scale)), 1.8rem);
+  margin-bottom: clamp(.15rem, calc(.35rem * var(--name-scale)), .7rem);
   display: block;
   /* height is set by JS — no min-height to avoid the gap */
   animation: name-float 5s ease-in-out infinite;
+}
+
+/* The name must remain visible even if canvas animation or third-party font loading is unavailable. */
+.name-script {
+  display: block;
+  width: 100%;
+  overflow: visible;
+  color: var(--accent);
+  font-family: var(--name-font), var(--font-script), 'Dancing Script', 'Brush Script MT', cursive;
+  /* Size follows the card's content width, not the browser viewport. */
+  font-size: clamp(2.6rem, 8vw, 7rem);
+  font-size: clamp(2.6rem, calc(9cqw * var(--name-scale)), calc(7rem * var(--name-scale)));
+  font-weight: 700;
+  line-height: .95;
+  letter-spacing: -.035em;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  background: linear-gradient(115deg, var(--ink) 0%, var(--accent) 48%, var(--accent2) 100%);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  -webkit-text-stroke: 1px rgba(var(--ink-rgb), .45);
+  filter: drop-shadow(0 3px 0 rgba(var(--bg-rgb), .9)) drop-shadow(0 0 18px rgba(var(--accent-rgb), .28));
+}
+
+.name-script {
+  animation: name-float 5s ease-in-out infinite, name-shimmer 5s ease-in-out infinite;
+}
+
+body.name-style-vibes .name-script {
+  font-style: italic;
+  letter-spacing: .015em;
+  animation: name-float 6s ease-in-out infinite, name-glow 4s ease-in-out infinite;
+}
+
+body.name-style-syne .name-script {
+  font-family: 'Syne', sans-serif;
+  font-weight: 800;
+  letter-spacing: -.07em;
+  animation: name-pulse 4s ease-in-out infinite;
+}
+
+body.name-style-bodoni .name-script {
+  font-family: 'Bodoni Moda', serif;
+  font-style: italic;
+  letter-spacing: -.045em;
+  animation: name-shimmer 6s ease-in-out infinite;
+}
+
+body.name-style-garamond .name-script {
+  font-family: 'EB Garamond', serif;
+  font-style: italic;
+  letter-spacing: -.02em;
+  animation: name-float 7s ease-in-out infinite;
+}
+
+body.name-style-space .name-script {
+  font-family: 'Space Grotesk', sans-serif;
+  font-weight: 800;
+  letter-spacing: -.06em;
+  animation: name-pulse 5s ease-in-out infinite;
+}
+
+body.name-style-orbitron .name-script {
+  font-family: 'Orbitron', sans-serif;
+  font-size: clamp(2.1rem, 7vw, 5.8rem);
+  font-weight: 900;
+  letter-spacing: -.08em;
+  text-transform: uppercase;
+  animation: name-scan 4s linear infinite;
+}
+
+@keyframes name-shimmer {
+  0%, 100% { filter: drop-shadow(0 3px 0 rgba(var(--bg-rgb), .9)) drop-shadow(0 0 12px rgba(var(--accent-rgb), .2)); }
+  50% { filter: drop-shadow(0 3px 0 rgba(var(--bg-rgb), .9)) drop-shadow(0 0 24px rgba(var(--accent-rgb), .48)); }
+}
+
+@keyframes name-glow {
+  0%, 100% { transform: translateY(0) rotate(-1deg); }
+  50% { transform: translateY(-3px) rotate(1deg); }
+}
+
+@keyframes name-pulse {
+  0%, 100% { opacity: .86; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.015); }
+}
+
+@keyframes name-scan {
+  0%, 100% { filter: drop-shadow(0 3px 0 rgba(var(--bg-rgb), .9)) drop-shadow(0 0 10px rgba(var(--accent-rgb), .18)); }
+  50% { filter: drop-shadow(0 3px 0 rgba(var(--bg-rgb), .9)) drop-shadow(0 0 28px rgba(var(--accent-rgb), .55)); }
 }
 
 @keyframes name-float {
@@ -130,6 +226,7 @@ section {
   display: block;
   width: 100%;
   height: auto;
+  display: none;
 }
 
 .pen-nib {
@@ -147,7 +244,7 @@ section {
 }
 
 h1 {
-  font-size: clamp(1.4rem, 3vw, 1.8rem);
+  font-size: calc(clamp(1.4rem, 3vw, 1.8rem) * var(--text-scale));
   line-height: 1.3;
   margin-bottom: .7rem;
   font-weight: 400;
@@ -156,13 +253,13 @@ h1 {
 h2 {
   font-family: var(--font-head);
   font-weight: 600;
-  font-size: clamp(1.6rem, 3.6vw, 2.2rem);
+  font-size: calc(clamp(1.6rem, 3.6vw, 2.2rem) * var(--text-scale));
   margin-bottom: .8rem;
 }
 
 p {
   color: var(--dim);
-  font-size: .98rem;
+  font-size: calc(.98rem * var(--text-scale));
   line-height: 1.6;
   max-width: 48ch;
 }
@@ -1138,6 +1235,15 @@ body.editing #t-save, body.editing #t-undo {
   border-radius: 16px;
   background: rgba(8, 8, 12, .96);
   box-shadow: 0 0 50px rgba(0, 0, 0, .65), 0 0 35px rgba(var(--accent-rgb), .22);
+}
+
+.drawer-label {
+  display: block;
+  color: var(--accent);
+  font-size: .72rem;
+  font-weight: 700;
+  line-height: 1.35;
+  margin: .2rem 0 .35rem;
 }
 
 #imgview img {

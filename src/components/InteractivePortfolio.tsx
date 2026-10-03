@@ -285,7 +285,7 @@ export function InteractivePortfolio() {
     }
 
     /* ---------- 2. State & Engine Data ---------- */
-    var LS = 'cd_portfolio_v3';
+    var DEFAULT_EDITOR_PIN = '7854';
     function $(s: string): any {
       return document.querySelector(s);
     }
@@ -303,7 +303,17 @@ export function InteractivePortfolio() {
       return String(l).split(':')[0];
     }
     var HEAD0 = "'Bodoni Moda',serif",
-      BODY0 = "'Manrope',sans-serif";
+      BODY0 = "'Manrope',sans-serif",
+      SCRIPT0 = "'Dancing Script',cursive";
+    var NAME_STYLES = [
+      { label: 'Dancing Script — Signature', value: SCRIPT0, className: 'name-style-dancing' },
+      { label: 'Great Vibes — Luxury', value: "'Great Vibes',cursive", className: 'name-style-vibes' },
+      { label: 'Syne — Editorial', value: "'Syne',sans-serif", className: 'name-style-syne' },
+      { label: 'Bodoni Moda — Fashion', value: "'Bodoni Moda',serif", className: 'name-style-bodoni' },
+      { label: 'EB Garamond — Classic', value: "'EB Garamond',serif", className: 'name-style-garamond' },
+      { label: 'Space Grotesk — Modern', value: "'Space Grotesk',sans-serif", className: 'name-style-space' },
+      { label: 'Orbitron — Tech', value: "'Orbitron',sans-serif", className: 'name-style-orbitron' },
+    ];
     var DEF = {
       skillGroups: [
         { cat: 'Frontend', items: [{ n: 'JavaScript' }, { n: 'React.js' }, { n: 'Next.js' }, { n: 'Tailwind CSS' }, { n: 'Bootstrap' }, { n: 'Material UI' }] },
@@ -342,20 +352,13 @@ export function InteractivePortfolio() {
         { label: 'Phone', value: '+91 78549 43328', icon: 'phone', url: 'tel:+917854943328' },
         { label: 'Location', value: 'Bhubaneswar, India', icon: 'map', url: 'https://www.google.com/maps/search/?api=1&query=Bhubaneswar' },
       ],
-      theme: { bg: '#000000', ink: '#f2f2f2', accent: '#d7dbe2', accent2: '#c7ccd4', glow: 1, speed: 1 },
-      fonts: { head: HEAD0, body: BODY0 },
+      theme: { bg: '#000000', ink: '#f2f2f2', accent: '#d7dbe2', accent2: '#c7ccd4', glow: 1, speed: 1, nameSize: 1, textSize: 1 },
+      fonts: { head: HEAD0, body: BODY0, script: SCRIPT0 },
+      editorPin: DEFAULT_EDITOR_PIN,
       texts: {} as Record<string, string>,
       order: null as string[] | null,
     };
     var S = clone(DEF);
-    try {
-      var sv = JSON.parse(localStorage.getItem(LS) || 'null');
-      if (sv) {
-        for (var k in sv) S[k] = sv[k];
-        if (!S.theme.glow) S.theme.glow = 1;
-        if (!S.theme.speed) S.theme.speed = 1;
-      }
-    } catch (e) {}
 
     var PRESETS: Array<[string, any]> = [
       ['Silver & Black', { bg: '#000000', ink: '#f2f2f2', accent: '#d7dbe2', accent2: '#c7ccd4' }],
@@ -637,6 +640,11 @@ export function InteractivePortfolio() {
       w.appendChild(addCard('exp', '+ Add role'));
     }
 
+    function certificateMediaSrc(certificate: any) {
+      if (certificate.mediaId) return '/api/portfolio/media?id=' + encodeURIComponent(certificate.mediaId);
+      return certificate.img || '';
+    }
+
     function renderEdu() {
       var w = $('#edu-list');
       if (!w) return;
@@ -649,16 +657,17 @@ export function InteractivePortfolio() {
       if (!c) return;
       c.innerHTML = '';
       S.certs.forEach(function (e: any, i: number) {
-        var thumb = e.img
+        var mediaSrc = certificateMediaSrc(e);
+        var thumb = mediaSrc
           ? e.mediaType === 'pdf'
             ? '<span class="pdf-thumb" aria-label="PDF certificate">PDF</span>'
-            : '<img class="thumb" src="' + e.img + '" alt="Certificate preview">'
+            : '<img class="thumb" src="' + mediaSrc + '" alt="Certificate preview">'
           : AWARD;
         var credential = e.credentialId
           ? '<span class="credential-meta"><span class="credential-label">Credential ID</span>' + ed('credentialId', e.credentialId, 'credential-id') + '</span>'
           : '';
         var verify = e.url ? '<span class="credential-verify" data-verify-url="' + esc(e.url) + '">Verify credential ↗</span>' : '';
-        c.appendChild(card('cert-badge', 'certs', i, e, thumb + '<span class="cert-copy">' + ed('name', e.name) + credential + verify + '</span>', !!e.img));
+        c.appendChild(card('cert-badge', 'certs', i, e, thumb + '<span class="cert-copy">' + ed('name', e.name) + credential + verify + '</span>', !!mediaSrc));
       });
       c.appendChild(addCard('certs', '+ Add certificate', 'add-card cert-add'));
     }
@@ -826,9 +835,9 @@ export function InteractivePortfolio() {
           return;
         }
         var it = getList(c.dataset.list!)[+c.dataset.i!];
-        if (it && it.img) {
+        if (it && certificateMediaSrc(it)) {
           e.preventDefault();
-          openCertificateView(it.img, it.mediaType === 'pdf' ? 'pdf' : 'image');
+          openCertificateView(certificateMediaSrc(it), it.mediaType === 'pdf' ? 'pdf' : 'image');
         }
       }
     };
@@ -975,10 +984,11 @@ export function InteractivePortfolio() {
       $('#lm-desc').textContent = isCert
         ? 'Add the credential ID and verification URL. Attach a certificate photo or PDF to open it directly in this portfolio.'
         : 'Paste a website URL, an email address or a phone number. Clicking the card opens it.';
-      $('#lm-preview').innerHTML = it.img
+      var mediaSrc = certificateMediaSrc(it);
+      $('#lm-preview').innerHTML = mediaSrc
         ? it.mediaType === 'pdf'
           ? '<span class="pdf-preview">PDF certificate attached</span>'
-          : '<img src="' + it.img + '" style="max-width:100%;max-height:120px;border-radius:8px;" alt="Certificate preview">'
+          : '<img src="' + mediaSrc + '" style="max-width:100%;max-height:120px;border-radius:8px;" alt="Certificate preview">'
         : '';
       $('#lm-file').value = '';
       $('#lm').classList.add('open');
@@ -1003,7 +1013,7 @@ export function InteractivePortfolio() {
         }
         if (v) {
           it.url = normUrl(v);
-        } else if (!it.img) {
+        } else if (!certificateMediaSrc(it)) {
           it.url = '';
         }
       } else if (v) {
@@ -1057,19 +1067,25 @@ export function InteractivePortfolio() {
         if (!selectedList || LM.list !== selectedList || LM.i !== selectedIndex) return;
         var it = getList(selectedList)[selectedIndex];
         if (!it) return;
-        it.img = r.result as string;
+        var dataUrl = r.result as string;
+        var mediaId = it.mediaId || ('cert-' + selectedIndex + '-' + Date.now());
+        it.mediaId = mediaId;
+        it.img = '';
         it.mediaType = isPdf ? 'pdf' : 'image';
         $('#lm-preview').innerHTML = it.mediaType === 'pdf'
           ? '<span class="pdf-preview">PDF certificate attached</span>'
-          : '<img src="' + r.result + '" style="max-width:100%;max-height:120px;border-radius:8px;" alt="Certificate preview">';
+          : '<img src="' + dataUrl + '" style="max-width:100%;max-height:120px;border-radius:8px;" alt="Certificate preview">';
         var preview = $('#lm-preview');
         preview.insertAdjacentHTML('beforeend', '<div class="upload-status">Saving certificate permanently…</div>');
-        try {
-          localStorage.setItem(LS, JSON.stringify(S));
-        } catch (error) {
-          // Large files may exceed the browser cache; Neon is the durable store.
-        }
-        void syncToNeon()
+        void fetch('/api/portfolio/media', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: mediaId, mediaType: it.mediaType, dataUrl: dataUrl }),
+        })
+          .then(function (response) {
+            if (!response.ok) throw new Error('Certificate media upload failed');
+            return syncToNeon();
+          })
           .then(function () {
             if (LM.list === selectedList && LM.i === selectedIndex) {
               preview.insertAdjacentHTML('beforeend', '<div class="upload-status">Saved permanently ✓</div>');
@@ -1152,8 +1168,12 @@ export function InteractivePortfolio() {
       r.setProperty('--accent2', t.accent2);
       r.setProperty('--accent2-rgb', a2.join(','));
       var gl = t.glow != null ? t.glow : 1,
-        sp = t.speed != null ? t.speed : 1;
+        sp = t.speed != null ? t.speed : 1,
+        ns = t.nameSize != null ? t.nameSize : 1,
+        ts = t.textSize != null ? t.textSize : 1;
       r.setProperty('--gmul', gl);
+      r.setProperty('--name-scale', ns);
+      r.setProperty('--text-scale', ts);
       (window as any).CUR = { acc: a.join(','), accent: t.accent, accent2: t.accent2, glow: gl, speed: sp };
       if ((window as any).__applyThree) (window as any).__applyThree();
       if ($('#c-bg')) $('#c-bg').value = t.bg;
@@ -1162,14 +1182,21 @@ export function InteractivePortfolio() {
       if ($('#c-accent2')) $('#c-accent2').value = t.accent2;
       if ($('#r-glow')) $('#r-glow').value = Math.round(gl * 100);
       if ($('#r-speed')) $('#r-speed').value = Math.round(sp * 100);
+      if ($('#r-name-size')) $('#r-name-size').value = Math.round(ns * 100);
+      if ($('#r-text-size')) $('#r-text-size').value = Math.round(ts * 100);
     }
 
     function applyFonts() {
       var r = document.documentElement.style;
       r.setProperty('--font-head', S.fonts.head);
       r.setProperty('--font-body', S.fonts.body);
+      r.setProperty('--name-font', S.fonts.script || SCRIPT0);
+      document.body.classList.remove('name-style-dancing', 'name-style-vibes', 'name-style-syne', 'name-style-bodoni', 'name-style-garamond', 'name-style-space', 'name-style-orbitron');
+      var selectedScript = NAME_STYLES.find(function (style) { return style.value === (S.fonts.script || SCRIPT0); });
+      document.body.classList.add(selectedScript ? selectedScript.className : 'name-style-dancing');
       if ($('#f-head')) $('#f-head').value = S.fonts.head;
       if ($('#f-body')) $('#f-body').value = S.fonts.body;
+      if ($('#f-script')) $('#f-script').value = S.fonts.script || SCRIPT0;
     }
 
     function syncToNeon() {
@@ -1194,7 +1221,10 @@ export function InteractivePortfolio() {
         for (var key in payload.state) S[key] = payload.state[key];
         if (!S.theme.glow) S.theme.glow = 1;
         if (!S.theme.speed) S.theme.speed = 1;
-        localStorage.setItem(LS, JSON.stringify(S));
+        if (!S.theme.nameSize) S.theme.nameSize = 1;
+        if (!S.theme.textSize) S.theme.textSize = 1;
+        if (!S.fonts.script) S.fonts.script = SCRIPT0;
+        if (!S.editorPin) S.editorPin = DEFAULT_EDITOR_PIN;
         applyTheme(clone(S.theme));
         applyFonts();
         renderAll();
@@ -1227,6 +1257,8 @@ export function InteractivePortfolio() {
             var t = clone(x[1]);
             t.glow = S.theme.glow;
             t.speed = S.theme.speed;
+            t.nameSize = S.theme.nameSize;
+            t.textSize = S.theme.textSize;
             var f = t.font,
               bf = t.bodyFont;
             delete t.font;
@@ -1296,6 +1328,26 @@ export function InteractivePortfolio() {
         }
       })();
 
+      function bindScaleRange(id: string, key: 'nameSize' | 'textSize') {
+        var snapped = false;
+        var range = $('#' + id);
+        if (!range) return;
+        range.addEventListener('input', function (this: HTMLInputElement) {
+          if (!snapped) {
+            snapshot();
+            snapped = true;
+          }
+          var t = clone(S.theme);
+          t[key] = +this.value / 100;
+          applyTheme(t);
+        });
+        range.addEventListener('change', function () {
+          snapped = false;
+        });
+      }
+      bindScaleRange('r-name-size', 'nameSize');
+      bindScaleRange('r-text-size', 'textSize');
+
       function fill(sel: HTMLSelectElement | null, def: string, defLabel: string) {
         if (!sel) return;
         var h = '<optgroup label="Default">' + '<option value="' + def + '">' + defLabel + '</option></optgroup><optgroup label="ATS-friendly fonts">';
@@ -1306,6 +1358,11 @@ export function InteractivePortfolio() {
       }
       fill($('#f-head'), HEAD0, 'Bodoni Moda — headings');
       fill($('#f-body'), BODY0, 'Manrope — body text');
+      if ($('#f-script')) {
+        $('#f-script').innerHTML = '<optgroup label="CHIRANJEEB DASH — headline styles">' + NAME_STYLES.map(function (style) {
+          return '<option value="' + style.value + '">' + style.label + '</option>';
+        }).join('') + '</optgroup>';
+      }
       if ($('#f-head')) {
         $('#f-head').onchange = function (this: HTMLSelectElement) {
           snapshot();
@@ -1320,21 +1377,21 @@ export function InteractivePortfolio() {
           applyFonts();
         };
       }
+      if ($('#f-script')) {
+        $('#f-script').onchange = function (this: HTMLSelectElement) {
+          snapshot();
+          S.fonts.script = this.value;
+          applyFonts();
+        };
+      }
     })();
 
     /* ---------- Editor PIN protection ---------- */
-    var PIN_KEY = 'portfolio_editor_pin';
-    var DEFAULT_PIN = '7854';
     var editorUnlocked = false;
     var pendingEditorAction: 'edit' | 'customize' | null = null;
 
     function getEditorPin() {
-      try {
-        var stored = localStorage.getItem(PIN_KEY);
-        return stored && /^\d{4,12}$/.test(stored) ? stored : DEFAULT_PIN;
-      } catch (e) {
-        return DEFAULT_PIN;
-      }
+      return /^\d{4,12}$/.test(S.editorPin || '') ? S.editorPin : DEFAULT_EDITOR_PIN;
     }
 
     function closePinModals() {
@@ -1420,15 +1477,18 @@ export function InteractivePortfolio() {
         if (error) error.textContent = 'The new PIN entries do not match.';
         return;
       }
-      try {
-        localStorage.setItem(PIN_KEY, newPin);
-        editorUnlocked = false;
-        var action = pendingEditorAction || 'customize';
-        closePinModals();
-        openPinGate(action, 'PIN updated. Enter your new PIN to continue.');
-      } catch (e) {
-        if (error) error.textContent = 'PIN could not be saved in this browser.';
-      }
+      S.editorPin = newPin;
+      editorUnlocked = false;
+      void syncToNeon()
+        .then(function () {
+          var action = pendingEditorAction || 'customize';
+          closePinModals();
+          openPinGate(action, 'PIN updated. Enter your new PIN to continue.');
+        })
+        .catch(function () {
+          S.editorPin = oldPin;
+          if (error) error.textContent = 'PIN could not be saved to Neon.';
+        });
     }
 
     if ($('#pin-gate-confirm')) $('#pin-gate-confirm').onclick = unlockEditor;
@@ -1469,10 +1529,14 @@ export function InteractivePortfolio() {
     });
     (function () {
       var n = 0;
-      document.querySelectorAll('main [class*="name"],main .kicker,main h1,main h2,main p').forEach(function (e: any) {
+      // Keep the historical data-key order so existing saved copy cannot shift
+      // between fields. The title wrapper/canvas retain their keys, but their
+      // generated markup is never restored from stale saved HTML.
+      document.querySelectorAll('main [class*="name"]:not(.name-script),main .kicker,main h1,main h2,main p').forEach(function (e: any) {
         if (e.closest('#skill-groups,#project-list,#exp-list,#edu-list,#cert-list,#contact-list')) return;
         e.dataset.k = 't' + n++;
         ORIG[e.dataset.k] = e.innerHTML;
+        if (e.id === 'name-pen-wrap' || e.id === 'name-canvas') return;
         if (S.texts && S.texts[e.dataset.k] != null) e.innerHTML = S.texts[e.dataset.k];
       });
     })();
@@ -1506,12 +1570,6 @@ export function InteractivePortfolio() {
       S.order = [].map.call(document.querySelectorAll('main section'), function (s: any) {
         return s.id;
       });
-      try {
-        localStorage.setItem(LS, JSON.stringify(S));
-      } catch (err) {
-        // Large certificate PDFs can exceed browser storage quota; Neon remains
-        // the durable source of truth even when the local cache cannot update.
-      }
       flash('Syncing to Neon…');
       void syncToNeon()
         .then(function () { flash('Saved to Neon ✓'); })
@@ -1540,9 +1598,6 @@ export function InteractivePortfolio() {
         clearTimeout(rs);
         rs = null;
         b.textContent = 'Reset everything';
-        try {
-          localStorage.removeItem(LS);
-        } catch (e) {}
         S = clone(DEF);
         document.querySelectorAll('[data-k]').forEach(function (e: any) {
           if (ORIG[e.dataset.k] != null) e.innerHTML = ORIG[e.dataset.k];
@@ -1551,6 +1606,9 @@ export function InteractivePortfolio() {
         applyTheme(clone(S.theme));
         applyFonts();
         renderAll();
+        void syncToNeon()
+          .then(function () { flash('Reset saved to Neon ✓'); })
+          .catch(function () { flash('Reset failed'); });
       };
     }
 
@@ -2067,7 +2125,17 @@ export function InteractivePortfolio() {
           <span>Animation speed</span>
           <input type="range" id="r-speed" min="25" max="200" defaultValue="100" />
         </div>
+        <div className="crow">
+          <span>Chiranjeeb Dash size</span>
+          <input type="range" id="r-name-size" min="70" max="125" defaultValue="100" />
+        </div>
+        <div className="crow">
+          <span>Other text size</span>
+          <input type="range" id="r-text-size" min="85" max="120" defaultValue="100" />
+        </div>
         <div className="dl">FONTS</div>
+        <label className="drawer-label" htmlFor="f-script">Chiranjeeb Dash — headline style</label>
+        <select id="f-script"></select>
         <select id="f-head"></select>
         <select id="f-body"></select>
         <button className="db" id="d-save">
@@ -2164,6 +2232,7 @@ export function InteractivePortfolio() {
               </span>
             </div>
             <div className="name-pen-container" id="name-pen-wrap">
+              <span className="name-script" aria-label="Chiranjeeb Dash">Chiranjeeb Dash</span>
               <canvas id="name-canvas" className="name-canvas" />
               <div className="pen-nib" id="pen-nib-el">✒️</div>
             </div>
