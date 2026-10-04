@@ -1029,6 +1029,8 @@ export function InteractivePortfolio() {
       it.url = '';
       it.img = '';
       it.mediaType = '';
+      it.mediaId = '';
+      it.mediaRemoved = true;
       closeLM();
       renderAll();
     };
@@ -1070,6 +1072,7 @@ export function InteractivePortfolio() {
         var dataUrl = r.result as string;
         var mediaId = it.mediaId || ('cert-' + selectedIndex + '-' + Date.now());
         it.mediaId = mediaId;
+        delete it.mediaRemoved;
         it.img = '';
         it.mediaType = isPdf ? 'pdf' : 'image';
         $('#lm-preview').innerHTML = it.mediaType === 'pdf'
