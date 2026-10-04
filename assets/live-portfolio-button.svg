@@ -1,0 +1,26 @@
+<svg width="520" height="104" viewBox="0 0 520 104" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">View live portfolio</title>
+  <desc id="desc">Animated play button linking to the live portfolio</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="520" y2="104" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#11111C"/>
+      <stop offset="1" stop-color="#25122A"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="56" y1="24" x2="466" y2="80" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FF2FB0"/>
+      <stop offset="1" stop-color="#39FF8F"/>
+    </linearGradient>
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="5" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+  <rect x="2" y="2" width="516" height="100" rx="22" fill="url(#bg)" stroke="url(#accent)" stroke-width="3">
+    <animate attributeName="stroke-opacity" values="1;0.55;1" dur="2.2s" repeatCount="indefinite"/>
+  </rect>
+  <circle cx="59" cy="52" r="25" fill="url(#accent)" filter="url(#glow)">
+    <animate attributeName="r" values="25;28;25" dur="1.8s" repeatCount="indefinite"/>
+  </circle>
+  <path d="M54 39L74 52L54 65V39Z" fill="#0B0B0F"/>
+  <text x="101" y="61" fill="white" font-family="Arial, Helvetica, sans-serif" font-size="25" font-weight="700" letter-spacing="2">VIEW LIVE PORTFOLIO</text>
+</svg>
